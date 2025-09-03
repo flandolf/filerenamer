@@ -1,106 +1,101 @@
 import os
 import curses
 
+def get_directory_options(current_path):
+    entries = os.listdir(current_path)
+    directories = [entry for entry in entries if os.path.isdir(os.path.join(current_path, entry))]
+    return [".. (Go up one level)", "Exit"] + directories
+
+def adjust_scroll_offset(selected_index, scroll_offset, max_display_rows):
+    if selected_index - scroll_offset >= max_display_rows:
+        return selected_index - max_display_rows + 1
+    elif selected_index < scroll_offset:
+        return selected_index
+    return scroll_offset
+
+def draw_header(stdscr, current_path, width):
+    path_display = current_path if len(current_path) <= width - 1 else "..." + current_path[-(width - 4):]
+    stdscr.addstr(0, 0, f"Current Directory: {path_display}")
+
+def draw_instructions(stdscr, options, scroll_offset, max_display_rows, width):
+    instructions = "↑/↓: Navigate | Enter: Select | Displaying "
+    if len(options) > max_display_rows:
+        instructions += f"{min(max_display_rows, len(options))} of {len(options)} items"
+        if scroll_offset > 0:
+            instructions += f" | Scrolled {scroll_offset} items"
+    else:
+        instructions += f"all {len(options)} items"
+    instructions = instructions[:width - 3] + "..." if len(instructions) > width else instructions
+    stdscr.addstr(1, 0, instructions, curses.A_DIM)
+
+def draw_options(stdscr, options, selected_index, scroll_offset, max_display_rows, width):
+    for i in range(min(max_display_rows, len(options))):
+        idx = i + scroll_offset
+        if idx >= len(options):
+            break
+
+        option = options[idx]
+        option = option[:width - 6] + "..." if len(option) > width - 3 else option
+
+        try:
+            if idx == selected_index:
+                stdscr.addstr(i + 2, 0, f"> {option}", curses.A_REVERSE)
+            else:
+                stdscr.addstr(i + 2, 0, f"  {option}")
+        except curses.error:
+            pass
+
+def handle_key_press(key, selected_index, options_len):
+    if key == curses.KEY_UP:
+        return max(0, selected_index - 1)
+    elif key == curses.KEY_DOWN:
+        return min(options_len - 1, selected_index + 1)
+    return selected_index
+
+def handle_selection(selected_index, current_path, directories):
+    if selected_index == 0:
+        return os.path.dirname(current_path), True  # Go up
+    elif selected_index == 1:
+        return current_path, False  # Exit
+    else:
+        new_path = os.path.join(current_path, directories[selected_index - 2])
+        return new_path, True
+
 def directory_selector(stdscr, start_path="."):
-    """
-    A directory selector with arrow key navigation and scrolling support.
-    Returns the selected directory path.
-    """
-    # Initialize the current path and selection index
     current_path = os.path.abspath(start_path)
     selected_index = 0
     scroll_offset = 0
 
-    # Configure curses
-    curses.curs_set(0)  # Hide the cursor
+    curses.curs_set(0)
     stdscr.keypad(True)
+    curses.use_default_colors()
 
     while True:
-        # Get the list of directories
-        entries = os.listdir(current_path)
-        directories = [entry for entry in entries if os.path.isdir(os.path.join(current_path, entry))]
+        options = get_directory_options(current_path)
+        directories = options[2:]
 
-        # Add "Go up one level" and "Exit" options
-        options = [".. (Go up one level)", "Exit"] + directories
-
-        # Get terminal dimensions
         height, width = stdscr.getmaxyx()
-        max_display_rows = height - 3  # Reserve lines for header and instructions
+        max_display_rows = height - 3
 
-        # Adjust scroll offset based on selected index
-        if selected_index - scroll_offset >= max_display_rows:
-            scroll_offset = selected_index - max_display_rows + 1
-        elif selected_index < scroll_offset:
-            scroll_offset = selected_index
+        scroll_offset = adjust_scroll_offset(selected_index, scroll_offset, max_display_rows)
 
-        # Clear the screen
-        stdscr.clear()
-
-        # Display the current directory at the top
-        path_display = current_path
-        if len(path_display) > width - 1:
-            path_display = "..." + path_display[-(width - 4):]
-        stdscr.addstr(0, 0, f"Current Directory: {path_display}", curses.A_BOLD)
-
-        # Display instructions
-        instructions = "↑/↓: Navigate | Enter: Select | Displaying "
-        if len(options) > max_display_rows:
-            instructions += f"{min(max_display_rows, len(options))} of {len(options)} items"
-            if scroll_offset > 0:
-                instructions += f" | Scrolled {scroll_offset} items"
-        else:
-            instructions += f"all {len(options)} items"
-
-        if len(instructions) > width:
-            instructions = instructions[:width-3] + "..."
-
+        stdscr.erase()
+        draw_header(stdscr, current_path, width)
         try:
-            stdscr.addstr(1, 0, instructions, curses.A_DIM)
+            draw_instructions(stdscr, options, scroll_offset, max_display_rows, width)
         except curses.error:
-            pass  # Handle case where terminal is too small
-
-        # Display the visible options with scrolling
-        for i in range(min(max_display_rows, len(options))):
-            idx = i + scroll_offset
-            if idx >= len(options):
-                break
-
-            option = options[idx]
-            # Truncate option text if needed
-            if len(option) > width - 3:
-                option = option[:width - 6] + "..."
-
-            try:
-                if idx == selected_index:
-                    stdscr.addstr(i + 2, 0, f"> {option}", curses.A_REVERSE)
-                else:
-                    stdscr.addstr(i + 2, 0, f"  {option}")
-            except curses.error:
-                pass  # Handle case where terminal is too small
-
-        # Refresh the screen
+            pass
+        draw_options(stdscr, options, selected_index, scroll_offset, max_display_rows, width)
         stdscr.refresh()
 
-        # Wait for user input
         key = stdscr.getch()
-
-        # Handle key presses
-        if key == curses.KEY_UP:
-            selected_index = max(0, selected_index - 1)
-        elif key == curses.KEY_DOWN:
-            selected_index = min(len(options) - 1, selected_index + 1)
-        elif key == curses.KEY_ENTER or key in [10, 13]:  # Enter key
-            if selected_index == 0:  # Go up one level
-                current_path = os.path.dirname(current_path)
-                selected_index = 0
-                scroll_offset = 0
-            elif selected_index == 1:  # Exit
+        if key in [curses.KEY_UP, curses.KEY_DOWN]:
+            selected_index = handle_key_press(key, selected_index, len(options))
+        elif key in [curses.KEY_ENTER, 10, 13]:
+            current_path, continue_loop = handle_selection(selected_index, current_path, directories)
+            if not continue_loop:
                 return current_path
-            else:  # Navigate into a directory
-                current_path = os.path.join(current_path, directories[selected_index - 2])
-                selected_index = 0
-                scroll_offset = 0
+            selected_index = scroll_offset = 0
         elif key == curses.KEY_RESIZE:
-            # Handle terminal resize event
-            stdscr.clear()
+            stdscr.erase()
             stdscr.refresh()
