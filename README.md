@@ -1,85 +1,78 @@
 # File Renamer
 
-A Python utility for working with files and directories, featuring flexible directory selection tools.
+A Python utility that uses AI (Google's Gemma model) to intelligently rename files with cleaner, more readable names.
+
+## Overview
+
+File Renamer is a command-line tool that helps you clean up messy filenames by leveraging Google's Gemma AI model. It automatically removes special characters, fixes capitalization, replaces underscores/dashes with spaces, and makes filenames more concise and readable.
 
 ## Features
 
-- **Directory Selection**: Navigate and select directories using either:
-  - GUI-based directory picker
-  - Terminal-based interactive directory browser
-- Both options start from the user's home directory (`~`) by default
-- File listing and manipulation capabilities
+- Interactive directory navigation using a curses-based UI
+- AI-powered filename cleaning and standardization
+- Configurable safe mode to preview changes before applying
+- Support for batch processing files in directories and subdirectories
+- Color-coded terminal output for better user experience
+
+## Requirements
+
+- Python 3.13 or higher
+- Google AI API key for accessing the Gemma model
 
 ## Installation
 
-1. Clone this repository:
+1. Clone the repository:
    ```bash
-   git clone [repository-url]
+   git clone <repository-url>
    cd filerenamer
    ```
 
-2. Install dependencies:
+2. Set up a virtual environment:
    ```bash
-   pip install -r requirements.txt
+   python -m venv .venv
+   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
    ```
+
+3. Install dependencies:
+   ```bash
+   pip install -e .
+   ```
+
+## Configuration
+
+Create a `.env` file in the root directory with the following settings:
+
+```
+API_KEY=your_google_ai_api_key
+SAFE_MODE=y  # Set to 'n' to skip confirmation prompts
+START_PATH=~/  # Default starting directory
+```
 
 ## Usage
 
-Run the main application:
+Run the application:
 
 ```bash
 python main.py
 ```
 
-This will prompt you to choose between GUI and terminal-based directory selection.
+1. Navigate through directories using arrow keys
+2. Press Enter to select a directory
+3. The tool will scan for files and suggest new names
+4. In safe mode, confirm each rename with 'y' or 'n'
+5. Files will be renamed with improved, cleaner filenames
 
-### Using the Directory Selector Directly
+## How It Works
 
-You can also use the directory selector component in your own Python scripts:
-
-```python
-from directory_selector import DirectorySelector
-
-# GUI-based selection
-selected_dir = DirectorySelector.select_directory_gui(
-    title="Select Directory",
-    initial_dir="~"  # Starts from home directory
-)
-
-# OR Terminal-based selection
-selected_dir = DirectorySelector.select_directory_terminal(
-    prompt="Choose a directory: ",
-    start_dir="~"    # Starts from home directory
-)
-
-# Process the selected directory
-if selected_dir:
-    print(f"Selected: {selected_dir}")
-    # Do something with the selected directory
-```
-
-## Directory Selector Features
-
-### GUI Selector
-- Uses native file dialog for a familiar user experience
-- Preserves the last selected location between invocations
-- Simple one-line call to get a directory path
-
-### Terminal Selector
-- Works in environments without GUI support
-- Intuitive navigation with numbered options
-- Keyboard shortcuts for common operations:
-  - `0`: Select current directory
-  - `p`: Go to parent directory
-  - `h`: Go to home directory
-  - `q`: Quit selection
-
-## Requirements
-
-- Python 3.6+
-- Tkinter (included with most Python installations)
-- colorama (for terminal colors)
+1. The tool scans selected directories (and optionally subdirectories) for files
+2. Each filename is sent to Google's Gemma AI model with a prompt to clean it up
+3. The model responds with a cleaned version of the name
+4. The tool renames the file, preserving the original extension
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+[License information](LICENSE)
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
