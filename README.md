@@ -23,7 +23,7 @@ File Renamer is a command-line tool that helps you clean up messy filenames by l
 
 1. Clone the repository:
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/flandolf/filerenamer
    cd filerenamer
    ```
 
