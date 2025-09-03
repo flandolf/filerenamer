@@ -1,23 +1,21 @@
-import mimetypes
-import dotenv
+import curses
+from dotenv import load_dotenv
 import os
 from colorama import Fore, init
 from google import genai
-from google.genai import types
-from directory_selector import DirectorySelector
 from sys import exit
 import pathlib
+from directory_selector import directory_selector
 MODEL_NAME = "gemma-3-27b-it"
 
 init()
+load_dotenv()
 
-dotenv.load_dotenv()
 client = genai.Client(api_key=os.environ["API_KEY"])
 
 def main():
     print(Fore.CYAN + "Welcome to File Renamer!" + Fore.RESET)
-    selector = DirectorySelector()
-    selected_dir = selector.select_directory_gui()
+    selected_dir = curses.wrapper(directory_selector)
     dirs = []
     files = []
     if selected_dir:
