@@ -5,17 +5,24 @@ from colorama import Fore, init
 from google import genai
 from sys import exit
 from directory_selector import directory_selector
+from functools import partial
 MODEL_NAME = "gemma-3-27b-it"
 
 def prompt(filename):
-    return f"Suggest a concise, well-formatted filename for: {filename}. Respond only with the new filename, no explanation or punctuation. Potential fixes are capitalization, spacing, and removing special characters."
+    return (
+        f"Clean and rename this messy filename: {filename}. "
+        f"Respond only with the new filename, without the extension. "
+        f"Fix common issues by capitalizing words, replacing underscores/dashes with spaces, "
+        f"removing numbers and special characters, and making it concise and readable. "
+        f"Do not add extra words, explanations, or punctuation."
+    )
 
 init()
 load_dotenv()
 
 def main():
     print(Fore.CYAN + "Welcome to File Renamer!" + Fore.RESET)
-    selected_dir = curses.wrapper(directory_selector)
+    selected_dir = curses.wrapper(partial(directory_selector, start_path="~"))
     files = []
     if selected_dir:
         for item in sorted(os.listdir(selected_dir)):

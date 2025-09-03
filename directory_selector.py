@@ -3,6 +3,8 @@ import curses
 
 def get_directory_options(current_path):
     entries = os.listdir(current_path)
+    # Omit if hidden directory
+    entries = [entry for entry in entries if not entry.startswith(".")]
     directories = [entry for entry in entries if os.path.isdir(os.path.join(current_path, entry))]
     return [".. (Go up one level)", "Exit"] + directories
 
@@ -62,7 +64,7 @@ def handle_selection(selected_index, current_path, directories):
         return new_path, True
 
 def directory_selector(stdscr, start_path="."):
-    current_path = os.path.abspath(start_path)
+    current_path = os.path.expanduser(start_path)
     selected_index = 0
     scroll_offset = 0
 
