@@ -7,10 +7,11 @@ from sys import exit
 from directory_selector import directory_selector
 MODEL_NAME = "gemma-3-27b-it"
 
+def prompt(filename):
+    return f"Suggest a concise, well-formatted filename for: {filename}. Respond only with the new filename, no explanation or punctuation. Potential fixes are capitalization, spacing, and removing special characters."
+
 init()
 load_dotenv()
-
-client = genai.Client(api_key=os.environ["API_KEY"])
 
 def main():
     print(Fore.CYAN + "Welcome to File Renamer!" + Fore.RESET)
@@ -28,7 +29,22 @@ def main():
                 except PermissionError:
                     print(Fore.RED + f"Permission denied: {subdir_path}" + Fore.RESET)
         print(Fore.GREEN + f"Selected directory: {selected_dir}" + Fore.RESET)
-        print(Fore.BLUE + f"Files: {files}" + Fore.RESET)
+        client = genai.Client(api_key=os.environ["API_KEY"])
+        for file in files:
+            filename = os.path.basename(file)
+            response = client.models.generate_content(
+                model=MODEL_NAME,
+                contents=[prompt(filename)]
+            )
+            new_filename = str(response.text).strip()
+            if input(Fore.YELLOW + f"Rename '{filename}' to '{new_filename}'? (y/n): " + Fore.RESET).lower() == 'y':
+                new_file_path = os.path.join(os.path.dirname(file), new_filename)
+                try:
+                    os.rename(file, new_file_path)
+                    print(Fore.GREEN + f"Renamed '{filename}' to '{new_filename}'" + Fore.RESET)
+                except Exception as e:
+                    print(Fore.RED + f"Error renaming file: {e}" + Fore.RESET)
+
     else:
         print(Fore.YELLOW + "No directory selected. Exiting." + Fore.RESET)
         exit(0)
